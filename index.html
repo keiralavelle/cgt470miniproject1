@@ -15,6 +15,7 @@
 <body>
 
     <div class="dashboard">
+
         <header>
             <h1>Women’s Basketball Team Performance Analyzer</h1>
 
@@ -24,113 +25,161 @@
             </p>
         </header>
 
+
         <div class="filters">
 
             <div class="filter-group">
+
                 <label for="teamFilter">Team</label>
 
                 <select id="teamFilter">
                     <option value="All">All Teams</option>
                 </select>
+
             </div>
 
 
             <div class="filter-group">
+
                 <label for="seasonFilter">Season</label>
 
                 <select id="seasonFilter">
                     <option value="All">All Seasons</option>
-                    <option value="2025-2026">2025-2026</option>
                 </select>
+
             </div>
 
         </div>
+
 
         <div class="chart-grid">
 
             <section class="chart-section">
 
                 <div class="question">
+
                     <p>
                         Did any of the top teams by lead percentage
                         win the championship?
                     </p>
 
-                    <span id="championshipAnswer">Yes/No</span>
+                    <span id="championshipAnswer">
+                        Yes/No
+                    </span>
+
                 </div>
 
 
-                <h2>Top Teams by Lead Percentage</h2>
+                <h2>Among AP-ranked teams, which teams had the highest average lead percentage</h2>
+
 
                 <div class="chart-card">
+
                     <svg id="leadChart"></svg>
+
                 </div>
 
             </section>
 
+
             <section class="chart-section">
 
                 <div class="categories">
-                    <p><strong>Offense:</strong> Free Throws, Field Goals, 3 pointers, assists</p>
-                    <p><strong>Defense:</strong> defensive rebounds, blocks, steals</p>
-                    <p><strong>Other:</strong> turnovers</p>
+
+                    <p>
+                        <strong>Offense:</strong>
+                        Free Throws, Field Goals, 3 pointers, assists
+                    </p>
+
+                    <p>
+                        <strong>Defense:</strong>
+                        defensive rebounds, blocks, steals
+                    </p>
+
+                    <p>
+                        <strong>Other:</strong>
+                        turnovers
+                    </p>
+
                 </div>
+
 
                 <h2>Teams with the Most Points</h2>
 
+
                 <div class="chart-card">
+
                     <svg id="pointsChart"></svg>
+
                 </div>
 
             </section>
 
         </div>
 
+
         <div class="summary-grid">
 
             <div class="summary-item">
+
                 <p>Top Scoring Team</p>
 
                 <div class="summary-card" id="topScoringTeam">
                     --
                 </div>
+
             </div>
 
 
             <div class="summary-item">
+
                 <p>Highest Team Lead Percentage</p>
 
                 <div class="summary-card" id="highestLeadTeam">
                     --
                 </div>
+
             </div>
 
 
             <div class="summary-item">
+
                 <p>Championship Winner</p>
 
                 <div class="summary-card" id="championshipWinner">
                     --
                 </div>
+
             </div>
 
 
             <div class="summary-item">
+
                 <p>Runner Up</p>
 
                 <div class="summary-card" id="runnerUp">
                     --
                 </div>
+
             </div>
 
         </div>
 
+
         <footer>
-            <p>About the data: NCAA women’s basketball game data</p>
+
+            <p>
+                About the data: NCAA women’s basketball game data
+            </p>
+
         </footer>
 
     </div>
+
+
+
     <script>
+
         const teamFiles = [
             "teams_cleaned_part_1.csv",
             "teams_cleaned_part_2.csv",
@@ -139,765 +188,1328 @@
             "teams_cleaned_part_5.csv",
             "teams_cleaned_part_6.csv"
         ];
-    
-        const teamFilter = d3.select("#teamFilter");
-        const seasonFilter = d3.select("#seasonFilter");
-    
-        Promise.all(
-            teamFiles.map(file => d3.csv(file))
-        )
-        .then(files => {
-    
-    
-            const rawData = files
-                .flat()
-                .filter(d =>
-                    +d.season >= 2024 &&
-                    +d.season <= 2026
-                );
-    
-            const basketballData = rawData.map(d => ({
-    
-                game_id: d.game_id,
-    
-                season: +d.season,
-    
-                team_id: d.team_id,
-    
-                team: d.team_location,
-    
-                team_name: d.team_name,
-    
-                score: +d.team_score || 0,
-    
-                winner:
-                    d.team_winner === "True" ||
-                    d.team_winner === "true",
-    
-                assists:
-                    +d.assists || 0,
-    
-                blocks:
-                    +d.blocks || 0,
-    
-                defensive_rebounds:
-                    +d.defensive_rebounds || 0,
-    
-                free_throws_made:
-                    +d.free_throws_made || 0,
-    
-                field_goals_made:
-                    +d.field_goals_made || 0,
-    
-                three_point_field_goals_made:
-                    +d.three_point_field_goals_made || 0,
-    
-                steals:
-                    +d.steals || 0,
-    
-                turnovers:
-                    +d.turnovers || 0,
-    
-                lead_percentage:
-                    d.lead_percentage === "" ||
-                    d.lead_percentage == null
-                        ? null
-                        : +d.lead_percentage
-    
-            }));
-    
-            const teams = Array.from(
-                new Set(
-                    basketballData.map(d => d.team)
+
+
+        const gameFiles = [
+            "games_cleaned_part_1.csv",
+            "games_cleaned_part_2.csv",
+            "games_cleaned_part_3.csv",
+            "games_cleaned_part_4.csv"
+        ];
+
+
+        const rankingFile =
+            "rankings_cleaned.csv";
+
+
+        const teamFilter =
+            d3.select("#teamFilter");
+
+
+        const seasonFilter =
+            d3.select("#seasonFilter");
+
+
+
+        Promise.all([
+
+            Promise.all(
+                teamFiles.map(
+                    file =>
+                        d3.csv(file)
                 )
-            )
-            .filter(Boolean)
-            .sort();
-    
-    
-            teamFilter
-                .selectAll("option")
-                .remove();
-    
-    
-            teamFilter
-                .append("option")
-                .attr("value", "All")
-                .text("All Teams");
-    
-    
-            teams.forEach(team => {
-    
+            ),
+
+            Promise.all(
+                gameFiles.map(
+                    file =>
+                        d3.csv(file)
+                )
+            ),
+
+            d3.csv(rankingFile)
+
+        ])
+
+        .then(
+            ([
+                teamFilesData,
+                gameFilesData,
+                rankingData
+            ]) => {
+
+
+                const basketballData =
+                    teamFilesData
+                        .flat()
+                        .filter(
+                            d =>
+                                +d.season >= 2024 &&
+                                +d.season <= 2026
+                        )
+                        .map(
+                            d => ({
+
+                                game_id:
+                                    d.game_id,
+
+                                season:
+                                    +d.season,
+
+                                team:
+                                    d.team_location,
+
+                                score:
+                                    +d.team_score || 0,
+
+                                assists:
+                                    +d.assists || 0,
+
+                                blocks:
+                                    +d.blocks || 0,
+
+                                defensive_rebounds:
+                                    +d.defensive_rebounds || 0,
+
+                                free_throws_made:
+                                    +d.free_throws_made || 0,
+
+                                field_goals_made:
+                                    +d.field_goals_made || 0,
+
+                                three_point_field_goals_made:
+                                    +d.three_point_field_goals_made || 0,
+
+                                steals:
+                                    +d.steals || 0,
+
+                                turnovers:
+                                    +d.turnovers || 0,
+
+                                lead_percentage:
+                                    d.lead_percentage === "" ||
+                                    d.lead_percentage == null
+                                        ? null
+                                        : +d.lead_percentage
+
+                            })
+                        );
+
+
+
+                const gameData =
+                    gameFilesData
+                        .flat()
+                        .filter(
+                            d =>
+                                +d.season >= 2024 &&
+                                +d.season <= 2026
+                        )
+                        .map(
+                            d => ({
+
+                                season:
+                                    +d.season,
+
+                                date:
+                                    new Date(d.date),
+
+                                homeTeam:
+                                    d.home_location,
+
+                                awayTeam:
+                                    d.away_location,
+
+                                homeScore:
+                                    +d.home_score,
+
+                                awayScore:
+                                    +d.away_score
+
+                            })
+                        );
+
+
+
+                const rankings =
+                    rankingData
+                        .filter(
+                            d =>
+                                +d.season_year >= 2024 &&
+                                +d.season_year <= 2026
+                        )
+                        .map(
+                            d => ({
+
+                                season:
+                                    +d.season_year,
+
+                                team:
+                                    d.team_location,
+
+                                rank:
+                                    +d.current,
+
+                                date:
+                                    new Date(d.date)
+
+                            })
+                        )
+                        .filter(
+                            d =>
+                                d.team &&
+                                d.rank >= 1 &&
+                                d.rank <= 25
+                        );
+
+
+
+                const teams =
+                    Array.from(
+                        new Set(
+                            basketballData.map(
+                                d => d.team
+                            )
+                        )
+                    )
+                    .filter(Boolean)
+                    .sort();
+
+
+
+                teamFilter
+                    .selectAll("option")
+                    .remove();
+
+
                 teamFilter
                     .append("option")
-                    .attr("value", team)
-                    .text(team);
-    
-            });
+                    .attr("value", "All")
+                    .text("All Teams");
 
-    
-            const seasons = Array.from(
-                new Set(
-                    basketballData.map(d => d.season)
-                )
-            )
-            .filter(Boolean)
-            .sort((a, b) => b - a);
-    
-    
-            seasonFilter
-                .selectAll("option")
-                .remove();
-    
-    
-            seasonFilter
-                .append("option")
-                .attr("value", "All")
-                .text("All Seasons");
-    
-    
-            seasons.forEach(season => {
-    
-                const seasonLabel =
-                    `${season - 1}-${season}`;
-    
-                seasonFilter
-                    .append("option")
-                    .attr("value", season)
-                    .text(seasonLabel);
-    
-            });
 
-            seasonFilter.property(
-                "value",
-                2026
-            );
-            function aggregateTeams(data) {
-    
-                const grouped =
-                    d3.groups(
-                        data,
-                        d => d.team
-                    );
-    
-    
-                return grouped.map(
-                    ([team, games]) => {
-    
-                        const averageScore =
-                            d3.mean(
-                                games,
-                                d => d.score
-                            ) || 0;
-    
-                        const validLeadGames =
-                            games.filter(
-                                d =>
-                                    d.lead_percentage !== null &&
-                                    !Number.isNaN(
-                                        d.lead_percentage
-                                    )
-                            );
-    
-    
-                        const averageLead =
-                            validLeadGames.length > 0
-                                ? d3.mean(
-                                    validLeadGames,
-                                    d =>
-                                        d.lead_percentage
-                                )
-                                : null;
-    
-                        const offense =
-                            d3.mean(
-                                games,
-                                d =>
-                                    d.free_throws_made +
-                                    d.field_goals_made +
-                                    d.three_point_field_goals_made +
-                                    d.assists
-                            ) || 0;
-    
-    
-                        const defense =
-                            d3.mean(
-                                games,
-                                d =>
-                                    d.defensive_rebounds +
-                                    d.blocks +
-                                    d.steals
-                            ) || 0;
-    
-    
-                        const turnovers =
-                            d3.mean(
-                                games,
-                                d =>
-                                    d.turnovers
-                            ) || 0;
-    
-    
-                        return {
-    
-                            team: team,
-    
-                            gamesPlayed:
-                                games.length,
-    
-                            points:
-                                averageScore,
-    
-                            leadPercentage:
-                                averageLead,
-    
-                            offense:
-                                offense,
-    
-                            defense:
-                                defense,
-    
-                            turnovers:
-                                turnovers
-    
-                        };
-    
+                teams.forEach(
+                    team => {
+
+                        teamFilter
+                            .append("option")
+                            .attr("value", team)
+                            .text(team);
+
                     }
                 );
-    
-            }
-    
-            function updateDashboard() {
-    
-                const selectedTeam =
-                    teamFilter.property("value");
-    
-                const selectedSeason =
-                    seasonFilter.property("value");
-    
-    
-                let filteredData =
-                    basketballData;
-    
-                if (selectedTeam !== "All") {
-    
-                    filteredData =
-                        filteredData.filter(
-                            d =>
-                                d.team ===
-                                selectedTeam
+
+
+
+                const seasons =
+                    Array.from(
+                        new Set(
+                            basketballData.map(
+                                d => d.season
+                            )
+                        )
+                    )
+                    .filter(Boolean)
+                    .sort(
+                        (a, b) =>
+                            b - a
+                    );
+
+
+
+                seasonFilter
+                    .selectAll("option")
+                    .remove();
+
+
+                seasonFilter
+                    .append("option")
+                    .attr("value", "All")
+                    .text("All Seasons");
+
+
+                seasons.forEach(
+                    season => {
+
+                        seasonFilter
+                            .append("option")
+                            .attr(
+                                "value",
+                                season
+                            )
+                            .text(
+                                `${season - 1}-${season}`
+                            );
+
+                    }
+                );
+
+
+                seasonFilter.property(
+                    "value",
+                    2026
+                );
+
+
+
+                function aggregateTeams(data) {
+
+                    const grouped =
+                        d3.groups(
+                            data,
+                            d => d.team
                         );
-    
+
+
+                    return grouped.map(
+                        ([team, games]) => {
+
+
+                            const validLeadGames =
+                                games.filter(
+                                    d =>
+                                        d.lead_percentage !== null &&
+                                        !Number.isNaN(
+                                            d.lead_percentage
+                                        )
+                                );
+
+
+                            return {
+
+                                team:
+
+                                    team,
+
+
+                                points:
+
+                                    d3.mean(
+                                        games,
+                                        d => d.score
+                                    ) || 0,
+
+
+                                leadPercentage:
+
+                                    validLeadGames.length > 0
+
+                                        ? d3.mean(
+                                            validLeadGames,
+                                            d =>
+                                                d.lead_percentage
+                                        )
+
+                                        : null,
+
+
+                                offense:
+
+                                    d3.mean(
+                                        games,
+                                        d =>
+                                            d.free_throws_made +
+                                            d.field_goals_made +
+                                            d.three_point_field_goals_made +
+                                            d.assists
+                                    ) || 0,
+
+
+                                defense:
+
+                                    d3.mean(
+                                        games,
+                                        d =>
+                                            d.defensive_rebounds +
+                                            d.blocks +
+                                            d.steals
+                                    ) || 0,
+
+
+                                turnovers:
+
+                                    d3.mean(
+                                        games,
+                                        d =>
+                                            d.turnovers
+                                    ) || 0
+
+                            };
+
+                        }
+                    );
+
                 }
-    
-                if (selectedSeason !== "All") {
-    
-                    filteredData =
-                        filteredData.filter(
+
+
+
+                function getAPRankedTeams(
+                    season
+                ) {
+
+                    const seasonRankings =
+                        rankings.filter(
                             d =>
                                 d.season ===
-                                +selectedSeason
+                                +season
                         );
-    
-                }
-    
-                const teamData =
-                    aggregateTeams(
-                        filteredData
-                    );
-    
-    
-                drawLeadChart(
-                    teamData
-                );
-    
-    
-                drawPointsChart(
-                    teamData
-                );
-    
-    
-                updateSummaryCards(
-                    teamData
-                );
-    
-            }
-            function drawLeadChart(data) {
-    
-                d3.select("#leadChart")
-                    .selectAll("*")
-                    .remove();
-    
-    
-                const validData =
-                    data.filter(
-                        d =>
-                            d.leadPercentage !== null
-                    );
-    
-    
-                const sortedData =
-                    [...validData]
+
+
+                    if (
+                        seasonRankings.length === 0
+                    ) {
+
+                        return [];
+
+                    }
+
+
+                    const latestDate =
+                        d3.max(
+                            seasonRankings,
+                            d => d.date
+                        );
+
+
+                    return seasonRankings
+                        .filter(
+                            d =>
+                                d.date.getTime() ===
+                                latestDate.getTime()
+                        )
                         .sort(
                             (a, b) =>
-                                b.leadPercentage -
-                                a.leadPercentage
-                        )
-                        .slice(0, 5);
-    
-    
-                const svg =
-                    d3.select("#leadChart");
-    
-    
-                const width = 500;
-                const height = 300;
-    
-    
-                const margin = {
-    
-                    top: 25,
-    
-                    right: 40,
-    
-                    bottom: 50,
-    
-                    left: 130
-    
-                };
-    
-    
-                svg.attr(
-                    "viewBox",
-                    `0 0 ${width} ${height}`
-                );
-
-                if (sortedData.length === 0) {
-    
-                    svg
-                        .append("text")
-                        .attr("x", width / 2)
-                        .attr("y", height / 2)
-                        .attr(
-                            "text-anchor",
-                            "middle"
-                        )
-                        .text(
-                            "No lead percentage data available"
+                                a.rank -
+                                b.rank
                         );
-    
-                    return;
+
                 }
-    
-                const x =
-                    d3.scaleLinear()
-                        .domain([
-                            0,
-                            d3.max(
-                                sortedData,
+
+
+
+                function getChampionshipInfo(
+                    season
+                ) {
+
+                    const seasonGames =
+                        gameData.filter(
+                            d =>
+                                d.season ===
+                                +season
+                        );
+
+
+                    if (
+                        seasonGames.length === 0
+                    ) {
+
+                        return {
+
+                            winner:
+                                "--",
+
+                            runnerUp:
+                                "--"
+
+                        };
+
+                    }
+
+
+                    const championshipGame =
+                        [...seasonGames]
+                            .sort(
+                                (a, b) =>
+                                    b.date -
+                                    a.date
+                            )[0];
+
+
+                    if (
+                        championshipGame.homeScore >
+                        championshipGame.awayScore
+                    ) {
+
+                        return {
+
+                            winner:
+                                championshipGame.homeTeam,
+
+                            runnerUp:
+                                championshipGame.awayTeam
+
+                        };
+
+                    }
+
+
+                    return {
+
+                        winner:
+                            championshipGame.awayTeam,
+
+                        runnerUp:
+                            championshipGame.homeTeam
+
+                    };
+
+                }
+
+
+
+                function updateDashboard() {
+
+                    const selectedTeam =
+                        teamFilter.property(
+                            "value"
+                        );
+
+
+                    const selectedSeason =
+                        seasonFilter.property(
+                            "value"
+                        );
+
+
+                    let filteredData =
+                        basketballData;
+
+
+
+                    if (
+                        selectedTeam !== "All"
+                    ) {
+
+                        filteredData =
+                            filteredData.filter(
                                 d =>
-                                    d.leadPercentage
+                                    d.team ===
+                                    selectedTeam
+                            );
+
+                    }
+
+
+
+                    if (
+                        selectedSeason !== "All"
+                    ) {
+
+                        filteredData =
+                            filteredData.filter(
+                                d =>
+                                    d.season ===
+                                    +selectedSeason
+                            );
+
+                    }
+
+
+
+                    const teamData =
+                        aggregateTeams(
+                            filteredData
+                        );
+
+
+                    drawLeadChart(
+                        teamData,
+                        selectedSeason
+                    );
+
+
+                    drawPointsChart(
+                        teamData
+                    );
+
+
+                    updateSummaryCards(
+                        teamData,
+                        selectedSeason
+                    );
+
+                }
+
+
+
+                function drawLeadChart(
+                    data,
+                    selectedSeason
+                ) {
+
+                    d3.select(
+                        "#leadChart"
+                    )
+                    .selectAll("*")
+                    .remove();
+
+
+
+                    const season =
+                        selectedSeason === "All"
+                            ? 2026
+                            : +selectedSeason;
+
+
+
+                    const apTeams =
+                        getAPRankedTeams(
+                            season
+                        );
+
+
+
+                    const rankMap =
+                        new Map(
+                            apTeams.map(
+                                d => [
+                                    d.team,
+                                    d.rank
+                                ]
                             )
-                        ])
-                        .nice()
-                        .range([
-                            margin.left,
-                            width - margin.right
-                        ]);
-    
-                const y =
-                    d3.scaleBand()
-                        .domain(
-                            sortedData.map(
-                                d => d.team
+                        );
+
+
+
+                    const sortedData =
+                        data
+                            .filter(
+                                d =>
+                                    d.leadPercentage !== null &&
+                                    rankMap.has(
+                                        d.team
+                                    )
                             )
+                            .map(
+                                d => ({
+
+                                    ...d,
+
+                                    apRank:
+                                        rankMap.get(
+                                            d.team
+                                        )
+
+                                })
+                            )
+                            .sort(
+                                (a, b) =>
+                                    b.leadPercentage -
+                                    a.leadPercentage
+                            )
+                            .slice(
+                                0,
+                                5
+                            );
+
+
+
+                    const svg =
+                        d3.select(
+                            "#leadChart"
+                        );
+
+
+                    const width = 500;
+
+                    const height = 300;
+
+
+                    const margin = {
+
+                        top:
+                            25,
+
+                        right:
+                            40,
+
+                        bottom:
+                            50,
+
+                        left:
+                            150
+
+                    };
+
+
+                    svg.attr(
+                        "viewBox",
+                        `0 0 ${width} ${height}`
+                    );
+
+
+
+                    if (
+                        sortedData.length === 0
+                    ) {
+
+                        svg
+                            .append("text")
+                            .attr(
+                                "x",
+                                width / 2
+                            )
+                            .attr(
+                                "y",
+                                height / 2
+                            )
+                            .attr(
+                                "text-anchor",
+                                "middle"
+                            )
+                            .text(
+                                "No AP ranking / lead percentage data available"
+                            );
+
+
+                        return;
+
+                    }
+
+
+
+                    const x =
+                        d3.scaleLinear()
+                            .domain([
+                                0,
+                                100
+                            ])
+                            .range([
+                                margin.left,
+                                width -
+                                margin.right
+                            ]);
+
+
+
+                    const y =
+                        d3.scaleBand()
+                            .domain(
+                                sortedData.map(
+                                    d => d.team
+                                )
+                            )
+                            .range([
+                                margin.top,
+                                height -
+                                margin.bottom
+                            ])
+                            .padding(
+                                0.25
+                            );
+
+
+
+                    svg
+                        .selectAll(
+                            ".lead-bar"
                         )
-                        .range([
-                            margin.top,
-                            height - margin.bottom
-                        ])
-                        .padding(0.25);
-    
-                svg.selectAll(".lead-bar")
-                    .data(sortedData)
-                    .enter()
-                    .append("rect")
-                    .attr(
-                        "class",
-                        "lead-bar"
-                    )
-                    .attr(
-                        "x",
-                        margin.left
-                    )
-                    .attr(
-                        "y",
-                        d =>
-                            y(d.team)
-                    )
-                    .attr(
-                        "width",
-                        d =>
-                            x(
-                                d.leadPercentage
-                            ) -
+                        .data(
+                            sortedData
+                        )
+                        .enter()
+                        .append(
+                            "rect"
+                        )
+                        .attr(
+                            "class",
+                            "lead-bar"
+                        )
+                        .attr(
+                            "x",
                             margin.left
-                    )
-                    .attr(
-                        "height",
-                        y.bandwidth()
-                    );
-    
-                svg.append("g")
-                    .attr(
-                        "transform",
-                        `translate(${margin.left},0)`
-                    )
-                    .call(
-                        d3.axisLeft(y)
-                            .tickSize(0)
-                    )
-                    .call(
-                        g =>
-                            g.select(
-                                ".domain"
-                            )
-                            .remove()
-                    );
-    
-    
-                svg.append("g")
-                    .attr(
-                        "transform",
-                        `translate(
-                            0,
-                            ${height - margin.bottom}
-                        )`
-                    )
-                    .call(
-                        d3.axisBottom(x)
-                    );
-    
-                svg.append("text")
-                    .attr(
-                        "x",
-                        width / 2
-                    )
-                    .attr(
-                        "y",
-                        height - 5
-                    )
-                    .attr(
-                        "text-anchor",
-                        "middle"
-                    )
-                    .text(
-                        "Lead Percentage"
-                    );
-    
-            }
-    
-            function drawPointsChart(data) {
-    
-                d3.select("#pointsChart")
-                    .selectAll("*")
-                    .remove();
-    
-    
-                const sortedData =
-                    [...data]
-                        .sort(
-                            (a, b) =>
-                                b.points -
-                                a.points
                         )
-                        .slice(0, 5);
-    
-    
-                const svg =
-                    d3.select("#pointsChart");
-    
-    
-                const width = 500;
-                const height = 300;
-    
-    
-                const margin = {
-    
-                    top: 25,
-    
-                    right: 40,
-    
-                    bottom: 50,
-    
-                    left: 130
-    
-                };
-    
-    
-                svg.attr(
-                    "viewBox",
-                    `0 0 ${width} ${height}`
-                );
-    
-    
-                if (sortedData.length === 0) {
-    
+                        .attr(
+                            "y",
+                            d =>
+                                y(d.team)
+                        )
+                        .attr(
+                            "width",
+                            d =>
+                                x(
+                                    d.leadPercentage
+                                ) -
+                                margin.left
+                        )
+                        .attr(
+                            "height",
+                            y.bandwidth()
+                        );
+
+
+
+                    svg
+                        .append("g")
+                        .attr(
+                            "transform",
+                            `translate(${margin.left},0)`
+                        )
+                        .call(
+                            d3.axisLeft(y)
+                                .tickSize(0)
+                                .tickFormat(
+                                    team => {
+
+                                        const row =
+                                            sortedData.find(
+                                                d =>
+                                                    d.team ===
+                                                    team
+                                            );
+
+
+                                        return row
+
+                                            ? `#${row.apRank} ${team}`
+
+                                            : team;
+
+                                    }
+                                )
+                        )
+                        .call(
+                            g =>
+                                g.select(
+                                    ".domain"
+                                )
+                                .remove()
+                        );
+
+
+
+                    svg
+                        .append("g")
+                        .attr(
+                            "transform",
+                            `translate(0,${
+                                height -
+                                margin.bottom
+                            })`
+                        )
+                        .call(
+                            d3.axisBottom(x)
+                        );
+
+
+
                     svg
                         .append("text")
-                        .attr("x", width / 2)
-                        .attr("y", height / 2)
+                        .attr(
+                            "x",
+                            width / 2
+                        )
+                        .attr(
+                            "y",
+                            height - 5
+                        )
                         .attr(
                             "text-anchor",
                             "middle"
                         )
                         .text(
-                            "No data available"
+                            "Lead Percentage"
                         );
-    
-                    return;
-                }
-    
-    
-                const x =
-                    d3.scaleLinear()
-                        .domain([
-                            0,
-                            d3.max(
-                                sortedData,
-                                d =>
-                                    d.offense +
-                                    d.turnovers +
-                                    d.defense
-                            )
-                        ])
-                        .nice()
-                        .range([
-                            margin.left,
-                            width - margin.right
-                        ]);
-    
-                const y =
-                    d3.scaleBand()
-                        .domain(
-                            sortedData.map(
-                                d => d.team
-                            )
-                        )
-                        .range([
-                            margin.top,
-                            height - margin.bottom
-                        ])
-                        .padding(0.25);
 
-                const stack =
-                    d3.stack()
-                        .keys([
-                            "offense",
-                            "turnovers",
-                            "defense"
-                        ]);
-    
-    
-                const stackedData =
-                    stack(sortedData);
-    
-    
-    
-                const colors = {
-    
-                    offense:
-                        "#43e88a",
-    
-                    turnovers:
-                        "#ff3131",
-    
-                    defense:
-                        "#2536f5"
-    
-                };
-    
-                svg.selectAll(".stack-group")
-                    .data(stackedData)
-                    .enter()
-                    .append("g")
-                    .attr(
-                        "fill",
-                        d =>
-                            colors[d.key]
+                }
+
+
+
+                function drawPointsChart(
+                    data
+                ) {
+
+                    d3.select(
+                        "#pointsChart"
                     )
-                    .selectAll("rect")
-                    .data(d => d)
-                    .enter()
-                    .append("rect")
-                    .attr(
-                        "x",
-                        d =>
-                            x(d[0])
-                    )
-                    .attr(
-                        "y",
-                        d =>
-                            y(
-                                d.data.team
+                    .selectAll("*")
+                    .remove();
+
+
+
+                    const sortedData =
+                        [...data]
+                            .sort(
+                                (a, b) =>
+                                    b.points -
+                                    a.points
                             )
-                    )
-                    .attr(
-                        "width",
-                        d =>
-                            x(d[1]) -
-                            x(d[0])
-                    )
-                    .attr(
-                        "height",
-                        y.bandwidth()
+                            .slice(
+                                0,
+                                5
+                            );
+
+
+
+                    const svg =
+                        d3.select(
+                            "#pointsChart"
+                        );
+
+
+                    const width = 500;
+
+                    const height = 300;
+
+
+                    const margin = {
+
+                        top:
+                            25,
+
+                        right:
+                            40,
+
+                        bottom:
+                            50,
+
+                        left:
+                            130
+
+                    };
+
+
+                    svg.attr(
+                        "viewBox",
+                        `0 0 ${width} ${height}`
                     );
-    
-                svg.append("g")
-                    .attr(
-                        "transform",
-                        `translate(${margin.left},0)`
-                    )
-                    .call(
-                        d3.axisLeft(y)
-                            .tickSize(0)
-                    )
-                    .call(
-                        g =>
-                            g.select(
-                                ".domain"
+
+
+
+                    if (
+                        sortedData.length === 0
+                    ) {
+
+                        svg
+                            .append("text")
+                            .attr(
+                                "x",
+                                width / 2
                             )
-                            .remove()
-                    );
-    
-                svg.append("g")
-                    .attr(
-                        "transform",
-                        `translate(
-                            0,
-                            ${height - margin.bottom}
-                        )`
-                    )
-                    .call(
-                        d3.axisBottom(x)
-                    );
-    
-            }
-    
-    
-            function updateSummaryCards(data) {
-    
-                if (data.length === 0) {
-    
+                            .attr(
+                                "y",
+                                height / 2
+                            )
+                            .attr(
+                                "text-anchor",
+                                "middle"
+                            )
+                            .text(
+                                "No data available"
+                            );
+
+
+                        return;
+
+                    }
+
+
+
+                    const x =
+                        d3.scaleLinear()
+                            .domain([
+
+                                0,
+
+                                d3.max(
+
+                                    sortedData,
+
+                                    d =>
+                                        d.offense +
+                                        d.turnovers +
+                                        d.defense
+
+                                )
+
+                            ])
+                            .nice()
+                            .range([
+
+                                margin.left,
+
+                                width -
+                                margin.right
+
+                            ]);
+
+
+
+                    const y =
+                        d3.scaleBand()
+                            .domain(
+                                sortedData.map(
+                                    d => d.team
+                                )
+                            )
+                            .range([
+
+                                margin.top,
+
+                                height -
+                                margin.bottom
+
+                            ])
+                            .padding(
+                                0.25
+                            );
+
+
+
+                    const stackedData =
+                        d3.stack()
+                            .keys([
+                                "offense",
+                                "turnovers",
+                                "defense"
+                            ])(
+                                sortedData
+                            );
+
+
+
+                    const colors = {
+
+                        offense:
+                            "#43e88a",
+
+                        turnovers:
+                            "#ff3131",
+
+                        defense:
+                            "#2536f5"
+
+                    };
+
+
+
+                    svg
+                        .selectAll(
+                            ".stack-group"
+                        )
+                        .data(
+                            stackedData
+                        )
+                        .enter()
+                        .append("g")
+                        .attr(
+                            "fill",
+                            d =>
+                                colors[d.key]
+                        )
+                        .selectAll(
+                            "rect"
+                        )
+                        .data(
+                            d => d
+                        )
+                        .enter()
+                        .append(
+                            "rect"
+                        )
+                        .attr(
+                            "x",
+                            d =>
+                                x(d[0])
+                        )
+                        .attr(
+                            "y",
+                            d =>
+                                y(
+                                    d.data.team
+                                )
+                        )
+                        .attr(
+                            "width",
+                            d =>
+                                x(d[1]) -
+                                x(d[0])
+                        )
+                        .attr(
+                            "height",
+                            y.bandwidth()
+                        );
+
+
+
+                    svg
+                        .append("g")
+                        .attr(
+                            "transform",
+                            `translate(${margin.left},0)`
+                        )
+                        .call(
+                            d3.axisLeft(y)
+                                .tickSize(0)
+                        )
+                        .call(
+                            g =>
+                                g.select(
+                                    ".domain"
+                                )
+                                .remove()
+                        );
+
+
+
+                    svg
+                        .append("g")
+                        .attr(
+                            "transform",
+                            `translate(0,${
+                                height -
+                                margin.bottom
+                            })`
+                        )
+                        .call(
+                            d3.axisBottom(x)
+                        );
+
+                }
+
+
+
+                function updateSummaryCards(
+                    data,
+                    selectedSeason
+                ) {
+
+                    if (
+                        data.length === 0
+                    ) {
+
+                        d3.select(
+                            "#topScoringTeam"
+                        )
+                        .text("--");
+
+
+                        d3.select(
+                            "#highestLeadTeam"
+                        )
+                        .text("--");
+
+
+                        d3.select(
+                            "#championshipWinner"
+                        )
+                        .text("--");
+
+
+                        d3.select(
+                            "#runnerUp"
+                        )
+                        .text("--");
+
+
+                        d3.select(
+                            "#championshipAnswer"
+                        )
+                        .text("--");
+
+
+                        return;
+
+                    }
+
+
+
+                    const topScoring =
+                        [...data]
+                            .sort(
+                                (a, b) =>
+                                    b.points -
+                                    a.points
+                            )[0];
+
+
+
                     d3.select(
                         "#topScoringTeam"
                     )
-                    .text("--");
-    
-    
-                    d3.select(
-                        "#highestLeadTeam"
-                    )
-                    .text("--");
-    
-    
+                    .text(
+                        topScoring.team
+                    );
+
+
+
+                    const season =
+                        selectedSeason === "All"
+                            ? 2026
+                            : +selectedSeason;
+
+
+
+                    const apTeams =
+                        getAPRankedTeams(
+                            season
+                        );
+
+
+
+                    const rankedTeamNames =
+                        new Set(
+                            apTeams.map(
+                                d => d.team
+                            )
+                        );
+
+
+
+                    const teamsWithLead =
+                        data.filter(
+                            d =>
+                                d.leadPercentage !== null &&
+                                rankedTeamNames.has(
+                                    d.team
+                                )
+                        );
+
+
+
+                    if (
+                        teamsWithLead.length > 0
+                    ) {
+
+                        const highestLead =
+                            [...teamsWithLead]
+                                .sort(
+                                    (a, b) =>
+                                        b.leadPercentage -
+                                        a.leadPercentage
+                                )[0];
+
+
+                        d3.select(
+                            "#highestLeadTeam"
+                        )
+                        .text(
+                            highestLead.team
+                        );
+
+                    }
+
+                    else {
+
+                        d3.select(
+                            "#highestLeadTeam"
+                        )
+                        .text(
+                            "No data"
+                        );
+
+                    }
+
+
+
+                    const championship =
+                        getChampionshipInfo(
+                            season
+                        );
+
+
+
                     d3.select(
                         "#championshipWinner"
                     )
-                    .text("--");
-    
-    
+                    .text(
+                        championship.winner
+                    );
+
+
+
                     d3.select(
                         "#runnerUp"
                     )
-                    .text("--");
-    
-    
-                    return;
-    
-                }
-
-    
-                const topScoring =
-                    [...data]
-                        .sort(
-                            (a, b) =>
-                                b.points -
-                                a.points
-                        )[0];
-    
-    
-                d3.select(
-                    "#topScoringTeam"
-                )
-                .text(
-                    topScoring.team
-                );
-
-    
-                const teamsWithLead =
-                    data.filter(
-                        d =>
-                            d.leadPercentage !== null
+                    .text(
+                        championship.runnerUp
                     );
-    
-    
-                if (
-                    teamsWithLead.length > 0
-                ) {
-    
-                    const highestLead =
+
+
+
+                    if (
+                        teamsWithLead.length === 0
+                    ) {
+
+                        d3.select(
+                            "#championshipAnswer"
+                        )
+                        .text(
+                            "No AP ranking data"
+                        );
+
+
+                        return;
+
+                    }
+
+
+
+                    const topLeadTeams =
                         [...teamsWithLead]
                             .sort(
                                 (a, b) =>
                                     b.leadPercentage -
                                     a.leadPercentage
-                            )[0];
-    
-    
+                            )
+                            .slice(
+                                0,
+                                5
+                            )
+                            .map(
+                                d => d.team
+                            );
+
+
+
+                    const championWasTopTeam =
+                        topLeadTeams.includes(
+                            championship.winner
+                        );
+
+
+
                     d3.select(
-                        "#highestLeadTeam"
+                        "#championshipAnswer"
                     )
                     .text(
-                        highestLead.team
+                        championWasTopTeam
+                            ? "Yes"
+                            : "No"
                     );
-    
+
                 }
-                else {
-    
-                    d3.select(
-                        "#highestLeadTeam"
-                    )
-                    .text(
-                        "No data"
-                    );
-    
-                }
-    
+
+
+
+                teamFilter.on(
+                    "change",
+                    updateDashboard
+                );
+
+
+                seasonFilter.on(
+                    "change",
+                    updateDashboard
+                );
+
+
+                updateDashboard();
+
             }
+        )
 
-            teamFilter.on(
-                "change",
-                updateDashboard
-            );
-            seasonFilter.on(
-                "change",
-                updateDashboard
-            );
+        .catch(
+            error => {
 
-            updateDashboard();
-    
-    
-        })
-        .catch(error => {
-    
-            console.error(
-                "Error loading CSV files:",
-                error
-            );
-    
-        });
-    
+                console.error(
+                    "Error loading data:",
+                    error
+                );
+
+            }
+        );
+
     </script>
 
 </body>
